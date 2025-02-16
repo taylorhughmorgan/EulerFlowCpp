@@ -21,9 +21,15 @@
     <ClCompile Include="BoundaryConditions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="JamesonShmidtTurkel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BoundaryConditions.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JamesonShmidtTurkel.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
