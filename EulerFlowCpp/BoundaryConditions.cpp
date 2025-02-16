@@ -1,25 +1,25 @@
 #include "BoundaryConditions.hpp"
 
 
-void reflective(pde_state& u, const pde_state& grid, std::vector<size_t> ids, double value) {
+void reflective(pde_state& u, const pde_state& grid, ident ids, double value) {
 	u[ids[0]] = -u[ids[1]];
 }
 
-void gradient(pde_state& u, const pde_state& grid, std::vector<size_t> ids, double value) {
+void gradient(pde_state& u, const pde_state& grid, ident ids, double value) {
 	double dx = grid[ids[1]] - grid[ids[0]];
 	u[ids[0]] = u[ids[1]] + value * dx;
 }
 
-void extrapolated(pde_state& u, const pde_state& grid, std::vector<size_t> ids, double value) {
+void extrapolated(pde_state& u, const pde_state& grid, ident ids, double value) {
 	u[ids[0]] = 2 * u[ids[1]] - u[ids[2]];
 }
 
-void constant_value(pde_state& u, const pde_state& grid, std::vector<size_t> ids, double value) {
+void constant_value(pde_state& u, const pde_state& grid, ident ids, double value) {
 	// constant value boundary condition
 	u[ids[0]] = value;
 }
 
-BCFunction agnosticBCs(const std::vector<size_t>& ids, validBCs bc_id, double bc_value)
+BCFunction agnosticBCs(const ident& ids, validBCs bc_id, double bc_value)
 {
 	// develop boundary conditions agnostic to whether it is applied to the upper or lower bound
 	std::function<void(pde_state& u, const pde_state& grid)> bc;
