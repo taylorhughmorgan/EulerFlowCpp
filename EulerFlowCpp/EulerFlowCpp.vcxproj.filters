@@ -21,7 +21,10 @@
     <ClCompile Include="BoundaryConditions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="JamesonShmidtTurkel.cpp">
+    <ClCompile Include="JST.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SedovEuler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -29,7 +32,10 @@
     <ClInclude Include="BoundaryConditions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JamesonShmidtTurkel.hpp">
+    <ClInclude Include="JST.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SedovEuler.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
