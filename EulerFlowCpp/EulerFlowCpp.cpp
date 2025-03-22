@@ -18,8 +18,8 @@ int main()
     std::array<size_t, 3> right_ids = { nEle - 1, nEle - 2, nEle - 3 };
 
     // using std::functions, create boundary conditions
-    auto bc_left = agnosticBCs(left_ids, validBCs::CONSTANT, 10.0);
-    auto bc_right = agnosticBCs(right_ids, validBCs::EXTRAPOLATED);
+    BCFunction bc_left = agnosticBCs(left_ids, validBCs::CONSTANT, 10.0);
+    BCFunction bc_right = agnosticBCs(right_ids, validBCs::EXTRAPOLATED);
 
     // print out the grid and u0 prior to applying BCs
     std::cout << "grid (m), u0 (K) " << std::endl;

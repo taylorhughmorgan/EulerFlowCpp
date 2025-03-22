@@ -7,12 +7,18 @@ typedef std::map<std::string, std::vector<std::string>> bc_map;
 
 class EulerSol
 {
-	/*Solve Euler's system of equations describing the behavior of inviscid, compressible flow by reducing to a system of ordinary differential equations. */
+/*Solve Euler's system of equations describing the behavior of inviscid, compressible flow by reducing to a system of ordinary differential equations. */
+private:
+	pde_state rho, rho_U, rho_E, u, E;
+	BCFunction rhoUpperBC, rhoLowerBC, uUpperBC, uLowerBC, EUpperBC, ELowerBC;
 public:
 	pde_state grid, grid_to_order;
+	// paramters on the ghost grid
+	pde_state ghost_grid, ghost_rho, ghost_U, ghost_E, ghost_p, ghost_H, ghost_cs;
 	double gamma;
-	size_t order, size;
+	size_t order, size, ghost_size;
 	std::array<double, 2> alpha, beta;
+	double dr;
 
 	// default constructor
 	EulerSol(pde_state& m_grid,	// computational grid
@@ -28,7 +34,7 @@ public:
 	// convert output to primatives
 	void conv2Primatives(pde_state& W, pde_state& rho, pde_state& u, pde_state& E, pde_state& p);
 	// function call for ODE integrator
-	void operator()(const pde_state& x, pde_state& dxdt, const double t);
+	void operator()(const pde_state& W, pde_state& dWdt, const double t);
 };
 
 class SedovBlast
