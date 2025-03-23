@@ -31,9 +31,20 @@ EulerSol::EulerSol(pde_state& m_grid,
 	ghost_E.resize(ghost_size);
 	ghost_p.resize(ghost_size);
 	ghost_H.resize(ghost_size);
+
 	std::fill(ghost_rho.begin(), ghost_rho.end(), 1.0);
 	std::fill(ghost_U.begin(), ghost_U.end(), 0.0);
 	std::fill(ghost_E.begin(), ghost_E.end(), 0.0);
+
+	// initialize the state, flux, and source vector variables
+	for (size_t iW = 0; iW < W.size(); iW++) {
+		W[iW] = pde_state(ghost_size, 0.0);
+		F[iW] = pde_state(ghost_size, 0.0);
+		S[iW] = pde_state(ghost_size, 0.0);
+		Qj[iW] = pde_state(size, 0.0);
+		dissipation[iW] = pde_state(size, 0.0);
+		residual[iW] = pde_state(size, 0.0);
+	}
 
 	// array of grid ^ order
 	grid_to_order.resize(size);
@@ -96,6 +107,37 @@ void EulerSol::operator()(const pde_state& W, pde_state& dWdt, const double t)
 		ghost_p[iG] = ghost_rho[iG] * (gamma - 1.0) * (ghost_E[iG] - 0.5 * pow(ghost_U[iG], 2));
 		ghost_H[iG] = ghost_p[iG] + ghost_p[iG] / ghost_rho[iG];
 		ghost_E[iG] = sqrt(gamma * ghost_p[iG] / ghost_rho[iG]);
+
+		// develop W - state vector variable
+		this->W[0][iG] = ghost_rho[iG] * pow(ghost_grid[iG], order);
+		this->W[1][iG] = ghost_rho[iG] * ghost_U[iG] * pow(ghost_grid[iG], order);
+		this->W[2][iG] = ghost_rho[iG] * ghost_E[iG] * pow(ghost_grid[iG], order);
+
+		// develop F - flux vector variable
+		this->F[0][iG] = ghost_rho[iG] * ghost_U[iG] * pow(ghost_grid[iG], order);
+		this->F[1][iG] = (ghost_rho[iG] * pow(ghost_U[iG], 2) + ghost_p[iG]) * pow(ghost_grid[iG], order);
+		this->F[2][iG] = ghost_rho[iG] * ghost_U[iG] * ghost_H[iG] * pow(ghost_grid[iG], order);
+
+		// develop S - source term variable
+		this->S[1][iG] = order * ghost_p[iG] * pow(ghost_grid[iG], order);
+	}
+
+	// calculate second-order Euler flux and dissipation flux
+	JST_2ndOrderEulerFlux(F, Qj);
+	JST_DissipationFlux(dissipation, this->W, ghost_p, ghost_U, ghost_cs, alpha, beta);
+
+	// calculating residuals
+	for (size_t iflux = 0; iflux < residual.size(); iflux++) {
+		for (size_t i = 0; i < residual[i].size(); i++) {
+			residual[iflux][i] = S[iflux][i] - 1.0 / dr * (Qj[iflux][i] - dissipation[iflux][i]);
+		}
+	}
+
+	// loading residual into dWdt
+	for (size_t i = 0; i < size; i++) {
+		dWdt[i] = residual[0][i];
+		dWdt[i + size] = residual[1][i];
+		dWdt[i + 2 * size] = residual[2][i];
 	}
 }
 

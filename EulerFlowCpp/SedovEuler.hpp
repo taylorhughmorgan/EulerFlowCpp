@@ -11,10 +11,11 @@ class EulerSol
 private:
 	pde_state rho, rho_U, rho_E, u, E;
 	BCFunction rhoUpperBC, rhoLowerBC, uUpperBC, uLowerBC, EUpperBC, ELowerBC;
-public:
-	pde_state grid, grid_to_order;
 	// paramters on the ghost grid
 	pde_state ghost_grid, ghost_rho, ghost_U, ghost_E, ghost_p, ghost_H, ghost_cs;
+	flux_state W, F, S, Qj, dissipation, residual;
+public:
+	pde_state grid, grid_to_order;
 	double gamma;
 	size_t order, size, ghost_size;
 	std::array<double, 2> alpha, beta;

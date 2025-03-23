@@ -20,26 +20,26 @@ void d3dx3_bckwrd(pde_state& y, pde_state& d3ydx3) {
 	}
 }
 
-void JST_2ndOrderEulerFlux(std::map<Fluxes, pde_state>& fluxVector, std::map<Fluxes, pde_state>& dissipationFlux) {
+void JST_2ndOrderEulerFlux(flux_state& fluxVector, flux_state& dissipationFlux) {
 	/* Calculate second order Euler Flux */
-	for (auto& pair : fluxVector) {
-		for (size_t i = 1; i < pair.second.size() - 1; i++) {
-			double hbar_jphalf = (pair.second[i + 1] + pair.second[i]) / 2;
-			double hbar_jmhalf = (pair.second[i] + pair.second[i - 1]) / 2;
-			dissipationFlux[pair.first][i] = hbar_jphalf - hbar_jmhalf;
+	for (size_t iflux = 0; iflux < fluxVector.size(); iflux++) {
+		for (size_t i = 1; i < fluxVector[iflux].size() - 1; i++) {
+			double hbar_jphalf = (fluxVector[iflux][i + 1] + fluxVector[iflux][i] ) / 2;
+			double hbar_jmhalf = (fluxVector[iflux][i] + fluxVector[iflux][i - 1]) / 2;
+			dissipationFlux[iflux][i - 1] = hbar_jphalf - hbar_jmhalf;
 		}
 	}
 }
 
 
-void JSD_DissipationFlux(
-	std::map<Fluxes,pde_state>& D_j, // dissipation flux
-	std::map<Fluxes, pde_state>& W,	 // state vector variable
-	pde_state& p,					 // pressure
-	pde_state& u,					 // velocity
-	pde_state& cs,					 // speed of sound
-	std::array<double, 2> alpha,	 // dissipative flux terms for spatial differencing
-	std::array<double, 2> beta		 // dissipative flux terms for spatial differencing
+void JST_DissipationFlux(
+	flux_state& D_j,				// dissipation flux
+	flux_state& W,					// state vector variable
+	pde_state& p,					// pressure
+	pde_state& u,					// velocity
+	pde_state& cs,					// speed of sound
+	std::array<double, 2>& alpha,	// dissipative flux terms for spatial differencing
+	std::array<double, 2>& beta		// dissipative flux terms for spatial differencing
 ) {
 	/* Calculate dissipation flux using JST method */
 	// pressure dissipation term: central differencing
@@ -47,7 +47,7 @@ void JSD_DissipationFlux(
 	pde_state nu_j, R_jphalf, R_jmhalf;
 	nu_j.resize(n_nuj);
 
-	for (size_t i = 1; p.size() - 1; i++) {
+	for (size_t i = 1; i < p.size() - 1; i++) {
 		nu_j[i] = std::abs((p[i + 1] - 2 * p[i] + p[i - 1]) / (p[i + 1] + 2 * p[i] + p[i - 1]));
 	}
 	nu_j.back() = std::abs((p[n_nuj - 1] - 2 * p[n_nuj - 2] + p[n_nuj - 3]) / (p[n_nuj - 1] + 2 * p[n_nuj - 2] + p[n_nuj - 3]));
@@ -60,14 +60,30 @@ void JSD_DissipationFlux(
 		R_jphalf[i] = (std::abs(u[i]) + cs[i] + std::abs(u[i - 1]) + cs[i - 1]) / 2.0;
 	}
 
-	for (auto& pair : D_j) {
-		for (size_t i = 1; i < pair.second.size() - 1; i++) {
+	for (size_t iflux = 0; iflux < W.size(); iflux++) {
+		// third derivative of the state vector, fwd differencing for j+1/2 and backward for j-1/2
+		pde_state delta3W_jphalf(n_nuj-1), delta3W_jmhalf(n_nuj-1);
+		d3dx3_fwd(W[iflux], delta3W_jphalf);
+		d3dx3_bckwrd(W[iflux], delta3W_jmhalf);
+
+		for (size_t i = 1; i < W[iflux].size() - 1; i++) {
 			// first derivative of the state vector
-			double deltaW_jmhalf = pair.second[i + 1] - pair.second[i];
-			double deltaW_jphalf = pair.second[i] - pair.second[i - 1];
+			double deltaW_jmhalf = W[iflux][i + 1] - W[iflux][i];
+			double deltaW_jphalf = W[iflux][i] - W[iflux][i - 1];
 
-			// third derivative of the state vector, fwd differencing for j+1/2 and backward for j-1/2
+			// dissipative coefficients, S_(j-1/2) MIGHT NEED FIXING
+			double S_jphalf = std::max(nu_j[i + 1], nu_j[i]);
+			double S_jmhalf = std::max(nu_j[i], nu_j[i - 1]);
 
+			double eps2_jphalf = std::min(alpha[0], alpha[1] * S_jphalf);
+			double eps2_jmhalf = std::min(alpha[0], alpha[1] * S_jmhalf);
+			double eps4_jphalf = std::max(0.0, beta[0] - beta[1] * eps2_jphalf);
+			double eps4_jmhalf = std::max(0.0, beta[0] - beta[1] * eps2_jmhalf);
+
+			// artificial dissipation terms
+			double d_jphalf = eps2_jphalf * R_jphalf[i] * deltaW_jphalf - eps4_jphalf * R_jphalf[i] * delta3W_jphalf[i];
+			double d_jmhalf = eps2_jmhalf * R_jmhalf[i] * deltaW_jmhalf - eps4_jmhalf * R_jmhalf[i] * delta3W_jmhalf[i];
+			D_j[iflux][i] = d_jphalf - d_jmhalf;
 		}
 	}
 }
