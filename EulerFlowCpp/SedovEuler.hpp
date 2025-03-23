@@ -31,9 +31,9 @@ public:
 		);
 
 	// create initial conditions
-	void createICs(pde_state& rho0, pde_state& v0, pde_state& p0, pde_state& W0);
+	void createICs(const pde_state& rho0, const pde_state& v0, const pde_state& p0, pde_state& W0);
 	// convert output to primatives
-	void conv2Primatives(pde_state& W, pde_state& rho, pde_state& u, pde_state& E, pde_state& p);
+	void conv2Primatives(const pde_state& W_out, pde_state& rho_out, pde_state& u_out, pde_state& E_out, pde_state& p_out);
 	// function call for ODE integrator
 	void operator()(const pde_state& W, pde_state& dWdt, const double t);
 };

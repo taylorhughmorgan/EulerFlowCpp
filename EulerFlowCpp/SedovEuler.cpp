@@ -62,26 +62,48 @@ EulerSol::EulerSol(pde_state& m_grid,
 	EUpperBC = agnosticBCs(right_ids, validBCs::GRADIENT);
 }
 
-void EulerSol::createICs(pde_state& rho0, pde_state& v0, pde_state& p0, pde_state& W0)
+void EulerSol::createICs(const pde_state& rho0, const pde_state& v0, const pde_state& p0, pde_state& W0)
 {
 	// Convert primative variables into the initial conditions - W0
 	size_t out_size = rho0.size() + v0.size() + p0.size();
 	W0.resize(out_size);
 	// using equations of state, calculate internal energy
+	pde_state E0(rho0.size());
+
+	for (size_t i = 0; i < rho0.size(); i++) {
+		E0[i] = p0[i] / (rho0[i] * (gamma - 1.0)) + 0.5 * pow(v0[i], 2);
+		W0[i] = rho0[i] * grid_to_order[i];
+		W0[i + size] = rho0[i] * v0[i] * grid_to_order[i];
+		W0[i + size] = rho0[i] * E0[i] * grid_to_order[i];
+	}
 }
 
-void EulerSol::conv2Primatives(pde_state& W, pde_state& rho, pde_state& u, pde_state& E, pde_state& p)
+void EulerSol::conv2Primatives(const pde_state& W_out, pde_state& rho_out, pde_state& u_out, pde_state& E_out, pde_state& p_out)
 {
 	// Convert W result to primative values -> rho, u, E, and P
+	// size the arrays correctly
+	rho_out.resize(this->size);
+	u_out.resize(this->size);
+	E_out.resize(this->size);
+	p_out.resize(this->size);
+	for (size_t i = 0; i < this->size; i++) {
+		rho_out[i] = W_out[i] / grid_to_order[i];
+		double rho_U = W_out[i + size] / grid_to_order[i];
+		double rho_E = W_out[i + 2 * size] / grid_to_order[i];
+		
+		u_out[i] = rho_U / rho_out[i];
+		E_out[i] = rho_E / rho_out[i];
+		p_out[i] = rho_out[i] * (gamma - 1) * (E_out[i] - 0.5 * pow(u_out[i], 2));
+	}
 }
 
-void EulerSol::operator()(const pde_state& W, pde_state& dWdt, const double t)
+void EulerSol::operator()(const pde_state& x, pde_state& dxdt, const double t)
 {
 	// Defining the system of equations
 	for (size_t i = 0; i < size; i++) {
-		rho[i] = W[i] / grid_to_order[i];
-		rho_U[i] = W[i + size] / grid_to_order[i];
-		rho_E[i] = W[i + 2 * size] / grid_to_order[i];
+		rho[i] = x[i] / grid_to_order[i];
+		rho_U[i] = x[i + size] / grid_to_order[i];
+		rho_E[i] = x[i + 2 * size] / grid_to_order[i];
 
 		// getting primatives u and E by dividing rho and U
 		u[i] = rho_U[i] / rho[i];
@@ -109,17 +131,17 @@ void EulerSol::operator()(const pde_state& W, pde_state& dWdt, const double t)
 		ghost_E[iG] = sqrt(gamma * ghost_p[iG] / ghost_rho[iG]);
 
 		// develop W - state vector variable
-		this->W[0][iG] = ghost_rho[iG] * pow(ghost_grid[iG], order);
-		this->W[1][iG] = ghost_rho[iG] * ghost_U[iG] * pow(ghost_grid[iG], order);
-		this->W[2][iG] = ghost_rho[iG] * ghost_E[iG] * pow(ghost_grid[iG], order);
+		W[0][iG] = ghost_rho[iG] * pow(ghost_grid[iG], order);
+		W[1][iG] = ghost_rho[iG] * ghost_U[iG] * pow(ghost_grid[iG], order);
+		W[2][iG] = ghost_rho[iG] * ghost_E[iG] * pow(ghost_grid[iG], order);
 
 		// develop F - flux vector variable
-		this->F[0][iG] = ghost_rho[iG] * ghost_U[iG] * pow(ghost_grid[iG], order);
-		this->F[1][iG] = (ghost_rho[iG] * pow(ghost_U[iG], 2) + ghost_p[iG]) * pow(ghost_grid[iG], order);
-		this->F[2][iG] = ghost_rho[iG] * ghost_U[iG] * ghost_H[iG] * pow(ghost_grid[iG], order);
+		F[0][iG] = ghost_rho[iG] * ghost_U[iG] * pow(ghost_grid[iG], order);
+		F[1][iG] = (ghost_rho[iG] * pow(ghost_U[iG], 2) + ghost_p[iG]) * pow(ghost_grid[iG], order);
+		F[2][iG] = ghost_rho[iG] * ghost_U[iG] * ghost_H[iG] * pow(ghost_grid[iG], order);
 
 		// develop S - source term variable
-		this->S[1][iG] = order * ghost_p[iG] * pow(ghost_grid[iG], order);
+		S[1][iG] = order * ghost_p[iG] * pow(ghost_grid[iG], order);
 	}
 
 	// calculate second-order Euler flux and dissipation flux
@@ -135,9 +157,9 @@ void EulerSol::operator()(const pde_state& W, pde_state& dWdt, const double t)
 
 	// loading residual into dWdt
 	for (size_t i = 0; i < size; i++) {
-		dWdt[i] = residual[0][i];
-		dWdt[i + size] = residual[1][i];
-		dWdt[i + 2 * size] = residual[2][i];
+		dxdt[i] = residual[0][i];
+		dxdt[i + size] = residual[1][i];
+		dxdt[i + 2 * size] = residual[2][i];
 	}
 }
 
