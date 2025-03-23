@@ -27,6 +27,9 @@
     <ClCompile Include="SedovEuler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="math_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BoundaryConditions.hpp">
@@ -36,6 +39,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SedovEuler.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="math_utils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

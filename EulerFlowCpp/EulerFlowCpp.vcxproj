@@ -131,11 +131,13 @@
     <ClCompile Include="BoundaryConditions.cpp" />
     <ClCompile Include="EulerFlowCpp.cpp" />
     <ClCompile Include="JST.cpp" />
+    <ClCompile Include="math_utils.cpp" />
     <ClCompile Include="SedovEuler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BoundaryConditions.hpp" />
     <ClInclude Include="JST.hpp" />
+    <ClInclude Include="math_utils.hpp" />
     <ClInclude Include="SedovEuler.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

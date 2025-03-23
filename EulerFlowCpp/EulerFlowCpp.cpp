@@ -3,10 +3,9 @@
 #include <iterator>
 #include <algorithm>
 #include <cmath>
-#include "BoundaryConditions.hpp"
+#include "SedovEuler.hpp"
 
-int main()
-{
+void testBoundaryConditions() {
     // creating an empty array to test out boundary conditions
     pde_state u0, grid;
     size_t nEle = 10;
@@ -14,7 +13,7 @@ int main()
         u0.push_back(std::pow(double(i), 2));
         grid.push_back(double(i));
     }
-    std::array<size_t, 3> left_ids = {0, 1, 2};
+    std::array<size_t, 3> left_ids = { 0, 1, 2 };
     std::array<size_t, 3> right_ids = { nEle - 1, nEle - 2, nEle - 3 };
 
     // using std::functions, create boundary conditions
@@ -35,5 +34,26 @@ int main()
     for (size_t i = 0; i < nEle; i++) {
         std::cout << grid[i] << ", " << u0[i] << std::endl;
     }
+}
+int main()
+{
+    // testing boundary conditions
+    testBoundaryConditions();
+
+    // testing Sedov/Euler Solution
+    double LenScale__m = 1;         // length scale of the problem
+    double DomainLen__m = 10;       // size of the domain
+    double PAmb__Pa = 101325;       // ambient air pressure
+    double PExpl__Pa = 40 * PAmb__Pa; // Explosive pressure
+    double RExpl__m = 3;            // radius of explosion
+    double tFin__s = 0.010;         // final simulation time
+    double rhoAmb__kgpm3 = 1.225;   // ambient air density
+    size_t orders = 2;              // order of solution
+    double gamma = 1.4;             // ratio of specific heats
+
+    SedovBlast Sedov(LenScale__m, DomainLen__m, RExpl__m, PExpl__Pa, tFin__s,
+        PAmb__Pa, rhoAmb__kgpm3, orders, gamma);
+    Sedov.solve();
+
     return 0;
 }
