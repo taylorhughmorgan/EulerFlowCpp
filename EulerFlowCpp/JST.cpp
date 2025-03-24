@@ -43,14 +43,14 @@ void JST_DissipationFlux(
 ) {
 	/* Calculate dissipation flux using JST method */
 	// nu_j - pressure dissipation term: central differencing
-	size_t n_nuj = p.size() - 1;
+	size_t n_nuj = p.size();
 	pde_state nu_j, R_jphalf, R_jmhalf;
 	nu_j.resize(n_nuj);
 
+	nu_j[0] = std::abs((p[2] - 2 * p[1] + p[0]) / (p[2] + 2 * p[1] + p[0]));
 	for (size_t i = 1; i < p.size() - 1; i++) {
-		nu_j[i - 1] = std::abs((p[i + 1] - 2 * p[i] + p[i - 1]) / (p[i + 1] + 2 * p[i] + p[i - 1]));
+		nu_j[i] = std::abs((p[i + 1] - 2 * p[i] + p[i - 1]) / (p[i + 1] + 2 * p[i] + p[i - 1]));
 	}
-	//nu_j[0] = std::abs((p[2] - 2 * p[1] + p[0]) / (p[2] + 2 * p[1] + p[0]));
 	nu_j.back() = std::abs((p[n_nuj - 1] - 2 * p[n_nuj - 2] + p[n_nuj - 3]) / (p[n_nuj - 1] + 2 * p[n_nuj - 2] + p[n_nuj - 3]));
 
 	// maximum wave speed of the system
@@ -73,7 +73,7 @@ void JST_DissipationFlux(
 			double deltaW_jmhalf = W[iflux][i] - W[iflux][i - 1];
 
 			// dissipative coefficients, S_(j-1/2) MIGHT NEED FIXING
-			double S_jphalf = std::max(nu_j[i], nu_j[i - 1]); //std::max(nu_j[i + 1], nu_j[i]);
+			double S_jphalf = std::max(nu_j[i + 1], nu_j[i]); //std::max(nu_j[i], nu_j[i - 1]);
 			double S_jmhalf = std::max(nu_j[i], nu_j[i - 1]);
 
 			double eps2_jphalf = std::min(alpha[0], alpha[1] * S_jphalf);

@@ -24,7 +24,7 @@ fig, ax = plt.subplots(nrows=len(solution))
 
 for i, (key, data) in enumerate(sol_data.items()):
     for idx in test_idx:
-        if 'pressure' in key:
+        if 'pressure' in key or 'energy' in key:
             ax[i].semilogy(solution['grids']['grid(m)'], data[idx], label=f"{idx}")
         else:
             ax[i].plot(solution['grids']['grid(m)'], data[idx], label=f"{idx}")
