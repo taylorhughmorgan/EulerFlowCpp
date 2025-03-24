@@ -61,15 +61,15 @@ EulerSol::EulerSol(
 	std::transform(grid.begin(), grid.end(), grid_to_order.begin(), [m_order](double x) { return std::pow(x, m_order); });
 
 	// defining boundary conditions
-	std::array<size_t, 3> left_ids = { 0, 1, 2 };
-	std::array<size_t, 3> right_ids = { size - 1, size - 2, size - 3 };
+	ident left_ids = { 0, 1, 2 };
+	ident right_ids = { size - 1, size - 2, size - 3 };
 
-	rhoLowerBC = agnosticBCs(left_ids, m_BCs[Fields::RHO][0]);
-	rhoUpperBC = agnosticBCs(right_ids, m_BCs[Fields::RHO][1]);
-	uLowerBC = agnosticBCs(left_ids, m_BCs[Fields::VEL][0]);
-	uUpperBC = agnosticBCs(right_ids, m_BCs[Fields::VEL][1]);
-	ELowerBC = agnosticBCs(left_ids, m_BCs[Fields::ENERGY][0]);
-	EUpperBC = agnosticBCs(right_ids, m_BCs[Fields::ENERGY][1]);
+	rhoLowerBC = agnosticBCs(left_ids, m_BCs[Fields::RHO][0], 0.0);
+	rhoUpperBC = agnosticBCs(right_ids, m_BCs[Fields::RHO][1], 0.0);
+	uLowerBC = agnosticBCs(left_ids, m_BCs[Fields::VEL][0], 0.0);
+	uUpperBC = agnosticBCs(right_ids, m_BCs[Fields::VEL][1], 0.0);
+	ELowerBC = agnosticBCs(left_ids, m_BCs[Fields::ENERGY][0], 0.0);
+	EUpperBC = agnosticBCs(right_ids, m_BCs[Fields::ENERGY][1], 0.0);
 }
 
 void EulerSol::createICs(const pde_state& rho0, const pde_state& v0, const pde_state& p0, pde_state& W0)
@@ -160,7 +160,7 @@ void EulerSol::operator()(const pde_state& x, pde_state& dxdt, const double t)
 
 	// calculating residuals
 	for (size_t iflux = 0; iflux < residual.size(); iflux++) {
-		for (size_t i = 0; i < residual[i].size(); i++) {
+		for (size_t i = 0; i < residual[iflux].size(); i++) {
 			residual[iflux][i] = S[iflux][i] - 1.0 / dr * (Qj[iflux][i] - dissipation[iflux][i]);
 		}
 	}

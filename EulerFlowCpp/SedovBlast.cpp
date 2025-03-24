@@ -97,7 +97,9 @@ void SedovBlast::solve()
 	//
 	std::array<double, 2> alpha = { 0.5, 0.5 };
 	std::array<double, 2> beta = { 0.25, 0.5 };
-	bc_map boundary_conditions;
+	bc_map boundary_conditions = { {Fields::RHO, {validBCs::GRADIENT, validBCs::GRADIENT} },
+						{Fields::VEL, {validBCs::REFLECTIVE, validBCs::GRADIENT} },
+						{Fields::ENERGY, {validBCs::GRADIENT, validBCs::GRADIENT} } };
 
 	// system of equations
 	EulerSol ODEs(grid, boundary_conditions, order, alpha, beta, gamma);
