@@ -84,7 +84,7 @@ void EulerSol::createICs(const pde_state& rho0, const pde_state& v0, const pde_s
 		E0[i] = p0[i] / (rho0[i] * (gamma - 1.0)) + 0.5 * pow(v0[i], 2);
 		W0[i] = rho0[i] * grid_to_order[i];
 		W0[i + size] = rho0[i] * v0[i] * grid_to_order[i];
-		W0[i + size] = rho0[i] * E0[i] * grid_to_order[i];
+		W0[i + 2 * size] = rho0[i] * E0[i] * grid_to_order[i];
 	}
 }
 
@@ -137,7 +137,7 @@ void EulerSol::operator()(const pde_state& x, pde_state& dxdt, const double t)
 		// fill ghost cells starting with index 1
 		ghost_rho[i + 1] = rho[i];
 		ghost_E[i + 1] = E[i];
-		ghost_E[i + 1] = u[i];
+		ghost_U[i + 1] = u[i];
 	}
 
 	// apply boundary conditions
@@ -152,7 +152,7 @@ void EulerSol::operator()(const pde_state& x, pde_state& dxdt, const double t)
 	for (size_t iG = 0; iG < ghost_size; iG++)
 	{
 		ghost_p[iG] = ghost_rho[iG] * (gamma - 1.0) * (ghost_E[iG] - 0.5 * pow(ghost_U[iG], 2));
-		ghost_H[iG] = ghost_p[iG] + ghost_p[iG] / ghost_rho[iG];
+		ghost_H[iG] = ghost_E[iG] + ghost_p[iG] / ghost_rho[iG];
 		ghost_cs[iG] = sqrt(gamma * ghost_p[iG] / ghost_rho[iG]);
 
 		// develop W - state vector variable

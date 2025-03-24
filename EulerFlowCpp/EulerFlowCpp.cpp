@@ -46,11 +46,22 @@ int main()
     double RExpl__m = 3;            // radius of explosion
     double tFin__s = 0.010;         // final simulation time
     double rhoAmb__kgpm3 = 1.225;   // ambient air density
-    size_t orders = 2;              // order of solution
+    size_t orders = 0;              // order of solution
     double gamma = 1.4;             // ratio of specific heats
+    size_t minNGridPts = 500;       // minimum grid resolution
 
-    SedovBlast Sedov(LenScale__m, DomainLen__m, RExpl__m, PExpl__Pa, tFin__s,
-        PAmb__Pa, rhoAmb__kgpm3, orders, gamma);
+    SedovBlast Sedov(
+        LenScale__m,	// length scale
+        DomainLen__m,	// size of the domain
+        RExpl__m,		// radius of explosion
+        PExpl__Pa,		// pressure of explosion
+        tFin__s,		// final simulation time
+        rhoAmb__kgpm3,  // ambient air density, kg / m ^ 3
+        PAmb__Pa,		// ambient air pressure, Pa
+        orders,			// order of the equations, 0 = cartesian, 1 - cylindrical, 2 = spherical
+        gamma,			// ratio of specific heats, N / A
+        minNGridPts     // minimum number of grid points
+    );
     Sedov.solve();
 
     return 0;

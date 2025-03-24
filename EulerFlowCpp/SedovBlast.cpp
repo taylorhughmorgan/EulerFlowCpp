@@ -2,8 +2,29 @@
 #include <boost/math/special_functions/gamma.hpp>
 #include <boost/numeric/odeint.hpp>
 #include <chrono>
+#include <fstream>
 
 using namespace boost::numeric::odeint;
+
+// for writing the output to file
+void write_to_csv(const std::string& filename, const std::vector<std::vector<double>>& data) {
+	std::ofstream file(filename);
+	if (!file.is_open()) {
+		std::cerr << "Failed to open file: " << filename << std::endl;
+		return;
+	}
+
+	for (const auto& row : data) {
+		for (size_t i = 0; i < row.size(); ++i) {
+			file << row[i];
+			if (i < row.size() - 1) file << ","; // Separate values with commas
+		}
+		file << "\n"; // New row
+	}
+
+	file.close();
+	std::cout << "Data written to " << filename << std::endl;
+}
 
 /**************** OBSERVER CLASS *************************************/
 struct push_back_state_and_time
@@ -80,7 +101,7 @@ SedovBlast::SedovBlast(
 
 	for (size_t i = 0; i < nGridPts; i++) {
 		if (grid[i] < rExplStar) {
-			p0Star[i] = pExplStar;
+			p0Star[i] *= pExplStar;
 		}
 		else break;
 	}
@@ -106,7 +127,7 @@ void SedovBlast::solve()
 	EulerSol ODEs(grid, boundary_conds, order, alpha, beta, gamma);
 	// intial conditions
 	pde_state W0Star;
-	ODEs.createICs(rho0Star, p0Star, v0Star, W0Star);
+	ODEs.createICs(rho0Star, v0Star, p0Star, W0Star);
 
 	std::cout << "Solving the Euler Equation as a system of ODES. \n" <<
 		"t_range = [" << 0.0 << ", " << times.back() << "](dimensionless) \n" <<
@@ -119,7 +140,7 @@ void SedovBlast::solve()
 	push_back_state_and_time observer(states_sol, times_sol);
 
 	// define numerical stepper
-	auto stepper = runge_kutta_cash_karp54<pde_state>();
+	auto stepper = make_controlled(1e-6, 1e-6, runge_kutta_cash_karp54<pde_state>()); //runge_kutta_cash_karp54<pde_state>();
 
 	// time the execution
 	auto start = std::chrono::high_resolution_clock::now();
@@ -154,4 +175,9 @@ void SedovBlast::solve()
 		}
 	}
 	std::cout << "Converted from dimensionless to dimensional fields\n";
+
+	// writing to file
+	write_to_csv("rho_solution.csv", rho_sol);
+	write_to_csv("press_solution.csv", p_sol);
+	write_to_csv("vel_solution.csv", u_sol);
 }
