@@ -1,4 +1,4 @@
-#include "SedovEuler.hpp"
+#include "EulerFlow.hpp"
 
 
 /*************** EULER SOLUTION CLASS ********************************/

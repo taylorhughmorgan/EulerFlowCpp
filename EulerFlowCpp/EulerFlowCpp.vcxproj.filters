@@ -24,13 +24,13 @@
     <ClCompile Include="JST.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SedovEuler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="math_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SedovBlast.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EulerFlow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -41,13 +41,13 @@
     <ClInclude Include="JST.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SedovEuler.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="math_utils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SedovBlast.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EulerFlow.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
