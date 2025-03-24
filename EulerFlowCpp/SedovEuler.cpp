@@ -1,5 +1,25 @@
 #include "SedovEuler.hpp"
 #include <boost/math/special_functions/gamma.hpp>
+#include <boost/numeric/odeint.hpp>
+
+using namespace boost::numeric::odeint;
+
+/**************** OBSERVER CLASS *************************************/
+struct push_back_state_and_time
+{
+	std::vector< pde_state >& m_states;
+	std::vector< double >& m_times;
+
+	push_back_state_and_time(std::vector< pde_state >& states, std::vector< double >& times)
+		: m_states(states), m_times(times) {
+	}
+
+	void operator()(const pde_state& x, double t)
+	{
+		m_states.push_back(x);
+		m_times.push_back(t);
+	}
+};
 
 /*************** EULER SOLUTION CLASS ********************************/
 EulerSol::EulerSol(
@@ -56,12 +76,12 @@ EulerSol::EulerSol(
 	std::array<size_t, 3> left_ids = { 0, 1, 2 };
 	std::array<size_t, 3> right_ids = { size - 1, size - 2, size - 3 };
 
-	rhoLowerBC = agnosticBCs(left_ids, validBCs::GRADIENT);
-	rhoUpperBC = agnosticBCs(right_ids, validBCs::GRADIENT);
-	uLowerBC = agnosticBCs(left_ids, validBCs::REFLECTIVE);
-	uUpperBC = agnosticBCs(right_ids, validBCs::GRADIENT);
-	ELowerBC = agnosticBCs(left_ids, validBCs::GRADIENT);
-	EUpperBC = agnosticBCs(right_ids, validBCs::GRADIENT);
+	rhoLowerBC = agnosticBCs(left_ids, m_BCs[Fields::RHO][0]);
+	rhoUpperBC = agnosticBCs(right_ids, m_BCs[Fields::RHO][1]);
+	uLowerBC = agnosticBCs(left_ids, m_BCs[Fields::VEL][0]);
+	uUpperBC = agnosticBCs(right_ids, m_BCs[Fields::VEL][1]);
+	ELowerBC = agnosticBCs(left_ids, m_BCs[Fields::ENERGY][0]);
+	EUpperBC = agnosticBCs(right_ids, m_BCs[Fields::ENERGY][1]);
 }
 
 void EulerSol::createICs(const pde_state& rho0, const pde_state& v0, const pde_state& p0, pde_state& W0)
@@ -204,14 +224,15 @@ SedovBlast::SedovBlast(
 	double tFinStar = tFinal__s * UScale / ScaleLen__m;
 
 	// set up the radial grid, we want at least 10 points for the explosion
-	nGridPts = std::ceil(lenStar / rExplStar * 10);
+	nGridPts = size_t(std::ceil(lenStar / rExplStar * 10.0));
 	nGridPts = std::max(nGridPts, minNGridPts);
 
 	double rMinStar = std::min(rExplStar / 10.0, lenStar / 100.0);
-	linspace(rMinStar, lenStar, nGridPts, grid);
-	linspace(0.0, tFinStar, minNGridPts, times);
+	linspace<double>(rMinStar, lenStar, nGridPts, grid);
+	linspace<double>(0.0, tFinStar, minNGridPts, times);
 
 	dr = grid[1] - grid[0];
+	dt = times[1] - times[0];
 
 	// setting the initial conditions - setting rho0Star and p0Star to 1.0 for dimensionless variables
 	rho0Star.resize(nGridPts);
@@ -249,7 +270,20 @@ void SedovBlast::solve()
 	pde_state W0Star;
 	ODEs.createICs(rho0Star, p0Star, v0Star, W0Star);
 
-	std::cout << "Solving the Euler Equation as a system of ODES. \nt_range=[" << 0.0 << "," << times.back() <<
-		"](dimensionless) \nnGridPts = " << nGridPts <<
-		"\nr_range = [" << grid[0] << "," << grid.back() << "](dimensionless)";
+	std::cout << "Solving the Euler Equation as a system of ODES. \n" <<
+		"t_range = [" << 0.0 << ", " << times.back() << "](dimensionless) \n" <<
+		"nGridPts = " << nGridPts << std::endl <<
+		"r_range = [" << grid[0] << "," << grid.back() << "](dimensionless)";
+
+	// define observer
+	std::vector<pde_state> states_sol;
+	pde_state times_sol;
+	push_back_state_and_time observer(states_sol, times_sol);
+
+	// define numerical stepper
+	auto stepper = runge_kutta_cash_karp54<pde_state>();
+
+	integrate_times(stepper, ODEs, W0Star, times.begin(), times.end(), dt, observer);
+
+	std::cout << "Solution reached!\n";
 }

@@ -4,7 +4,9 @@
 #include <memory>
 #include <algorithm>
 
-typedef std::map<std::string, validBCs> bc_map;
+// typedef for constructing boundary conditions
+enum class Fields { RHO, VEL, ENERGY };
+typedef std::map<Fields, std::array<validBCs,2>> bc_map;
 
 class EulerSol
 {
@@ -25,7 +27,9 @@ public:
 	// default constructor
 	EulerSol(
 		pde_state& m_grid,		// computational grid
-		bc_map m_BCs,			// 
+		bc_map m_BCs = { {Fields::RHO, {validBCs::GRADIENT, validBCs::GRADIENT} },
+						{Fields::VEL, {validBCs::REFLECTIVE, validBCs::GRADIENT} },
+						{Fields::ENERGY, {validBCs::GRADIENT, validBCs::GRADIENT} } }, // 
 		size_t m_order = 0,		// order of equations, 0=cartesian, 1=cylindrical/polar, 2=spherical
 		std::array<double, 2> m_alpha = { 0.5, 0.5 }, // dissipative flux terms for spatial differencing
 		std::array<double, 2> m_beta = { 0.25, 0.5 }, // dissipative flux terms for spatial differencing
@@ -43,7 +47,7 @@ public:
 class SedovBlast
 {
 private:
-	double dr;
+	double dr, dt;
 public:
 	double ScaleLen__m, DomainLen__m, RExpl__m, PExpl__Pa, tFinal__s, rho0__kgpm3, P0__Pa, gamma, EExpl__J;
 	size_t order, minNGridPts, nGridPts;
