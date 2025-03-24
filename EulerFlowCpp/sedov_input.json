@@ -1,10 +1,11 @@
 {
     "sedov" : {
+        "Output File" : "sedov_results.json",
         "Length Scale(m)" : 1.0,
-        "Domain Size(m)" : 10.0,
+        "Domain Size(m)" : 12.0,
         "Ambient Pressure(Pa)" : 101325,
         "Explosive Pressure(Pa)" : 4053000,
-        "Explosive Radius(m)" : 3.0,
+        "Explosive Radius(m)" : 1.5,
         "Final Time(s)" : 0.01,
         "Ambient Density(kg/m^3)" : 1.225,
         "order" : 0,

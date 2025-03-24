@@ -1,9 +1,6 @@
 // TestBoost.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 #include "SedovBlast.hpp"
-#include <nlohmann/json.hpp>
-
-using json = nlohmann::json;
 
 struct SedovParams {
     double LenScale__m;     // length scale of the problem
@@ -58,7 +55,7 @@ int main()
         SP.gamma,			// ratio of specific heats, N / A
         SP.minNGridPts      // minimum number of grid points
     );
-    Sedov.solve();
-
+    Sedov.solve(); // solve the system of equations and convert to SI units
+    Sedov.save(input_deck["sedov"]["Output File"], input_deck);
     return 0;
 }

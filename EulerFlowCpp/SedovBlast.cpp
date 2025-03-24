@@ -123,10 +123,10 @@ void SedovBlast::solve()
 						{Fields::ENERGY, {validBCs::GRADIENT, validBCs::GRADIENT} } };
 
 	// system of equations
-	EulerSol ODEs(grid, boundary_conds, order, alpha, beta, gamma);
+	ODEs = std::make_unique<EulerSol>(grid, boundary_conds, order, alpha, beta, gamma);
 	// intial conditions
 	pde_state W0Star;
-	ODEs.createICs(rho0Star, v0Star, p0Star, W0Star);
+	ODEs->createICs(rho0Star, v0Star, p0Star, W0Star);
 
 	std::cout << "Solving the Euler Equation as a system of ODES. \n" <<
 		"t_range = [" << 0.0 << ", " << times.back() << "](dimensionless) \n" <<
@@ -145,7 +145,7 @@ void SedovBlast::solve()
 	auto start = std::chrono::high_resolution_clock::now();
 
 	// run the integration
-	integrate_times(stepper, ODEs, W0Star, times.begin(), times.end(), dt, observer);
+	integrate_times(stepper, (*ODEs), W0Star, times.begin(), times.end(), dt, observer);
 
 	// stop the timer
 	auto stop = std::chrono::high_resolution_clock::now();
@@ -155,11 +155,15 @@ void SedovBlast::solve()
 
 	// convert solution to primatives
 	std::vector<pde_state> rhoStar_sol, pStar_sol, EStar_sol, uStar_sol;
-	ODEs.convAllPrimatives(states_sol, rhoStar_sol, uStar_sol, EStar_sol, pStar_sol);
+	ODEs->convAllPrimatives(states_sol, rhoStar_sol, uStar_sol, EStar_sol, pStar_sol);
 	std::cout << "Finished converting ODE solution to primative fields\n";
 
 	// converting from dimensionless to dimensional fields
-	std::vector<pde_state> rho_sol(rhoStar_sol.size()), p_sol(pStar_sol.size()), E_sol(EStar_sol.size()), u_sol(uStar_sol.size());
+	rho_sol.resize(rhoStar_sol.size());
+	p_sol.resize(pStar_sol.size());
+	E_sol.resize(EStar_sol.size()); 
+	u_sol.resize(uStar_sol.size());
+
 	for (size_t iState = 0; iState < rhoStar_sol.size(); iState++)
 	{
 		rho_sol[iState].resize(rhoStar_sol[iState].size());
@@ -174,9 +178,38 @@ void SedovBlast::solve()
 		}
 	}
 	std::cout << "Converted from dimensionless to dimensional fields\n";
+}
 
-	// writing to file
-	write_to_csv("rho_solution.csv", rho_sol);
-	write_to_csv("press_solution.csv", p_sol);
-	write_to_csv("vel_solution.csv", u_sol);
+
+void SedovBlast::save(std::string foutname, json inputs)
+{
+	// save the output to a JSON file with the large arrays saved as CSV files
+	std::string rho_fname = "rho_sol.csv";
+	std::string press_fname = "press_sol.csv";
+	std::string vel_fname = "vel_sol.csv";
+	std::string energy_fname = "energy_sol.csv";
+	
+	nlohmann::ordered_json output = inputs;
+	output["fields"]["density(kg/m^3)"] = rho_fname;
+	output["fields"]["pressure(Pa)"] = press_fname;
+	output["fields"]["velocity(m/s)"] = vel_fname;
+	output["fields"]["energy(J)"] = energy_fname;
+	output["grids"]["times(s)"] = tGrid__s;
+	output["grids"]["grid(m)"] = rGrid__m;
+
+	// writing to field data to files
+	write_to_csv(rho_fname, rho_sol);
+	write_to_csv(press_fname, p_sol);
+	write_to_csv(vel_fname, u_sol);
+	write_to_csv(energy_fname, E_sol);
+
+	std::ofstream fout(foutname);
+	if (fout.is_open()) {
+		fout << output.dump(4); // dump with 4 spaces of indentation
+		fout.close();
+		std::cout << "Euler Solution written to " << foutname << std::endl;
+	}
+	else {
+		std::cerr << "Error writting to file " << foutname << std::endl;
+	}
 }

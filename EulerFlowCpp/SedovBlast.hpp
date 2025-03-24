@@ -1,6 +1,9 @@
 #pragma once
 #include "EulerFlow.hpp"
 #include <fstream>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 class SedovBlast
 {
@@ -11,6 +14,11 @@ public:
 	size_t order, minNGridPts, nGridPts;
 	pde_state grid, times, rGrid__m, tGrid__s;
 	pde_state rho0Star, p0Star, v0Star;
+	// solution variables
+	std::vector<pde_state> rho_sol, p_sol, E_sol, u_sol;
+	// system of equations
+	std::unique_ptr<EulerSol> ODEs;
+
 
 	// default constructor
 	SedovBlast(
@@ -27,4 +35,6 @@ public:
 	);
 	// solve the system of equations over the time domain
 	void solve();
+	// save the results to the file
+	void save(std::string foutname, json inputs);
 };
