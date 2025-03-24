@@ -19,3 +19,6 @@ using BCFunction = std::function<void(pde_state&, const pde_state&)>;
 enum class validBCs { REFLECTIVE, GRADIENT, CONSTANT, EXTRAPOLATED };
 
 BCFunction agnosticBCs(const ident& ids, validBCs bc_id, double bc_value = 0.0);
+
+// test functions for initializing boundary conditions
+void testBoundaryConditions();

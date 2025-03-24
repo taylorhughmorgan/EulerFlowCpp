@@ -1,0 +1,26 @@
+{
+    "sedov" : {
+        "Length Scale(m)" : 1.0,
+        "Domain Size(m)" : 10.0,
+        "Ambient Pressure(Pa)" : 101325,
+        "Explosive Pressure(Pa)" : 4053000,
+        "Explosive Radius(m)" : 3.0,
+        "Final Time(s)" : 0.01,
+        "Ambient Density(kg/m^3)" : 1.225,
+        "order" : 0,
+        "gamma" : 1.4,
+        "minNGridPts" : 500
+    },
+    "input_descriptions" : {
+        "Length Scale(m)" : "Length for scaling the problem, typically >= 1.0",
+        "Domain Size(m)" : "Size of the domain, or the maximum radius of interest",
+        "Ambient Pressure(Pa)" : "ambient pressure in pascals",
+        "Explosive Pressure(Pa)" : "explosive pressure in pascals",
+        "Explosive Radius(m)" : "radius of the explosion in meters",
+        "Final Time(s)" : "final simulation time",
+        "Ambient Density(kg/m^3)" : "Ambient air density in kg/m^3",
+        "order" : "order of the equations. 0=linear/cartesian, 1=cylindrical/polar, 2=spherical",
+        "gamma" : "ratio of specific heats, dimensionless",
+        "minNGridPts" : "minimum number of grid points. If an explosion with a small radius and large domain is provided, the simulation will be larger than this."
+    }
+}

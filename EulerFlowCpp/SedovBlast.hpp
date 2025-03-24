@@ -1,5 +1,6 @@
 #pragma once
 #include "EulerFlow.hpp"
+#include <fstream>
 
 class SedovBlast
 {
