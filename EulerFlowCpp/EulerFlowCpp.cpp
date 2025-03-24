@@ -1,8 +1,5 @@
 // TestBoost.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
-#include <iterator>
-#include <algorithm>
-#include <cmath>
 #include "SedovBlast.hpp"
 
 void testBoundaryConditions() {
@@ -35,6 +32,7 @@ void testBoundaryConditions() {
         std::cout << grid[i] << ", " << u0[i] << std::endl;
     }
 }
+
 int main()
 {
     // testing boundary conditions

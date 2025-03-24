@@ -26,6 +26,7 @@ EulerSol::EulerSol(
 	for (size_t i = 1; i < ghost_grid.size() - 1; i++) {
 		ghost_grid[i] = grid[i - 1];
 	}
+
 	// initializing ghost grids: rho, U, and E
 	ghost_size = ghost_grid.size();
 	ghost_rho.resize(ghost_size);
@@ -33,12 +34,19 @@ EulerSol::EulerSol(
 	ghost_E.resize(ghost_size);
 	ghost_p.resize(ghost_size);
 	ghost_H.resize(ghost_size);
+	ghost_cs.resize(ghost_size);
 
 	std::fill(ghost_rho.begin(), ghost_rho.end(), 1.0);
 	std::fill(ghost_U.begin(), ghost_U.end(), 0.0);
 	std::fill(ghost_E.begin(), ghost_E.end(), 0.0);
 
 	// initialize the state, flux, and source vector variables
+	rho.resize(size);
+	rho_U.resize(size);
+	rho_E.resize(size);
+	u.resize(size);
+	E.resize(size);
+
 	for (size_t iW = 0; iW < W.size(); iW++) {
 		W[iW] = pde_state(ghost_size, 0.0);
 		F[iW] = pde_state(ghost_size, 0.0);
@@ -130,7 +138,7 @@ void EulerSol::operator()(const pde_state& x, pde_state& dxdt, const double t)
 	{
 		ghost_p[iG] = ghost_rho[iG] * (gamma - 1.0) * (ghost_E[iG] - 0.5 * pow(ghost_U[iG], 2));
 		ghost_H[iG] = ghost_p[iG] + ghost_p[iG] / ghost_rho[iG];
-		ghost_E[iG] = sqrt(gamma * ghost_p[iG] / ghost_rho[iG]);
+		ghost_cs[iG] = sqrt(gamma * ghost_p[iG] / ghost_rho[iG]);
 
 		// develop W - state vector variable
 		W[0][iG] = ghost_rho[iG] * pow(ghost_grid[iG], order);
