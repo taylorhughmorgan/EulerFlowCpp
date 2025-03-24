@@ -1,6 +1,5 @@
 #pragma once
 #include "BoundaryConditions.hpp"
-#include "map"
 
 // Fluxes
 enum class Fluxes { F_j, Q_j, D_j };

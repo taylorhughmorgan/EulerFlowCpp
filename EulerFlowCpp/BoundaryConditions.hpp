@@ -5,10 +5,6 @@
 #include <stdexcept>
 #include <iostream>
 #include <functional>
-#include <boost/math/constants/constants.hpp>
-
-// define pi
-static const double pi = boost::math::constants::pi<double>();
 
 // type definition for PDE state
 typedef std::vector<double> pde_state;

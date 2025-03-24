@@ -3,7 +3,7 @@
 #include <iterator>
 #include <algorithm>
 #include <cmath>
-#include "SedovEuler.hpp"
+#include "SedovBlast.hpp"
 
 void testBoundaryConditions() {
     // creating an empty array to test out boundary conditions
