@@ -1,6 +1,7 @@
 #include "SedovBlast.hpp"
 #include <boost/math/special_functions/gamma.hpp>
 #include <boost/numeric/odeint.hpp>
+#include <chrono>
 
 using namespace boost::numeric::odeint;
 
@@ -97,12 +98,12 @@ void SedovBlast::solve()
 	//
 	std::array<double, 2> alpha = { 0.5, 0.5 };
 	std::array<double, 2> beta = { 0.25, 0.5 };
-	bc_map boundary_conditions = { {Fields::RHO, {validBCs::GRADIENT, validBCs::GRADIENT} },
+	bc_map boundary_conds = { {Fields::RHO, {validBCs::GRADIENT, validBCs::GRADIENT} },
 						{Fields::VEL, {validBCs::REFLECTIVE, validBCs::GRADIENT} },
 						{Fields::ENERGY, {validBCs::GRADIENT, validBCs::GRADIENT} } };
 
 	// system of equations
-	EulerSol ODEs(grid, boundary_conditions, order, alpha, beta, gamma);
+	EulerSol ODEs(grid, boundary_conds, order, alpha, beta, gamma);
 	// intial conditions
 	pde_state W0Star;
 	ODEs.createICs(rho0Star, p0Star, v0Star, W0Star);
@@ -110,7 +111,7 @@ void SedovBlast::solve()
 	std::cout << "Solving the Euler Equation as a system of ODES. \n" <<
 		"t_range = [" << 0.0 << ", " << times.back() << "](dimensionless) \n" <<
 		"nGridPts = " << nGridPts << std::endl <<
-		"r_range = [" << grid[0] << "," << grid.back() << "](dimensionless)";
+		"r_range = [" << grid[0] << "," << grid.back() << "](dimensionless)\n";
 
 	// define observer
 	std::vector<pde_state> states_sol;
@@ -120,7 +121,37 @@ void SedovBlast::solve()
 	// define numerical stepper
 	auto stepper = runge_kutta_cash_karp54<pde_state>();
 
+	// time the execution
+	auto start = std::chrono::high_resolution_clock::now();
+
+	// run the integration
 	integrate_times(stepper, ODEs, W0Star, times.begin(), times.end(), dt, observer);
 
-	std::cout << "Solution reached!\n";
+	// stop the timer
+	auto stop = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
+	std::cout << "Solution reached after " << duration.count() << "miliseconds\n";
+
+	// convert solution to primatives
+	std::vector<pde_state> rhoStar_sol, pStar_sol, EStar_sol, uStar_sol;
+	ODEs.convAllPrimatives(states_sol, rhoStar_sol, uStar_sol, EStar_sol, pStar_sol);
+	std::cout << "Finished converting ODE solution to primative fields\n";
+
+	// converting from dimensionless to dimensional fields
+	std::vector<pde_state> rho_sol(rhoStar_sol.size()), p_sol(pStar_sol.size()), E_sol(EStar_sol.size()), u_sol(uStar_sol.size());
+	for (size_t iState = 0; iState < rhoStar_sol.size(); iState++)
+	{
+		rho_sol[iState].resize(rhoStar_sol[iState].size());
+		p_sol[iState].resize(pStar_sol[iState].size());
+		E_sol[iState].resize(EStar_sol[iState].size());
+		u_sol[iState].resize(uStar_sol[iState].size());
+		for (size_t i = 0; i < rhoStar_sol[iState].size(); i++) {
+			rho_sol[iState][i] = rhoStar_sol[iState][i] * rho0__kgpm3;
+			u_sol[iState][i] = uStar_sol[iState][i] * sqrt(P0__Pa / rho0__kgpm3);
+			p_sol[iState][i] = pStar_sol[iState][i] * P0__Pa;
+			E_sol[iState][i] = p_sol[iState][i] / (rho_sol[iState][i] * (gamma - 1.0)) + 0.5 * pow(u_sol[iState][i], 2);
+		}
+	}
+	std::cout << "Converted from dimensionless to dimensional fields\n";
 }

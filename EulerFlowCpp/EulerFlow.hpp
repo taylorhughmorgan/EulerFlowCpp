@@ -41,6 +41,8 @@ public:
 	void createICs(const pde_state& rho0, const pde_state& v0, const pde_state& p0, pde_state& W0);
 	// convert output to primatives
 	void conv2Primatives(const pde_state& W_out, pde_state& rho_out, pde_state& u_out, pde_state& E_out, pde_state& p_out);
+	// convert all output to primatives
+	void convAllPrimatives(const std::vector<pde_state>& W_out, std::vector<pde_state>& rho_out, std::vector<pde_state>& u_out, std::vector<pde_state>& E_out, std::vector<pde_state>& p_out);
 	// function call for ODE integrator
 	void operator()(const pde_state& W, pde_state& dWdt, const double t);
 };

@@ -62,7 +62,7 @@ EulerSol::EulerSol(
 
 	// defining boundary conditions
 	ident left_ids = { 0, 1, 2 };
-	ident right_ids = { size - 1, size - 2, size - 3 };
+	ident right_ids = { ghost_size - 1, ghost_size - 2, ghost_size - 3 };
 
 	rhoLowerBC = agnosticBCs(left_ids, m_BCs[Fields::RHO][0], 0.0);
 	rhoUpperBC = agnosticBCs(right_ids, m_BCs[Fields::RHO][1], 0.0);
@@ -88,9 +88,10 @@ void EulerSol::createICs(const pde_state& rho0, const pde_state& v0, const pde_s
 	}
 }
 
+
 void EulerSol::conv2Primatives(const pde_state& W_out, pde_state& rho_out, pde_state& u_out, pde_state& E_out, pde_state& p_out)
 {
-	// Convert W result to primative values -> rho, u, E, and P
+	// Convert a single W result to primative values -> rho, u, E, and P
 	// size the arrays correctly
 	rho_out.resize(this->size);
 	u_out.resize(this->size);
@@ -106,6 +107,20 @@ void EulerSol::conv2Primatives(const pde_state& W_out, pde_state& rho_out, pde_s
 		p_out[i] = rho_out[i] * (gamma - 1) * (E_out[i] - 0.5 * pow(u_out[i], 2));
 	}
 }
+
+void EulerSol::convAllPrimatives(const std::vector<pde_state>& W_out, std::vector<pde_state>& rho_out, std::vector<pde_state>& u_out, std::vector<pde_state>& E_out, std::vector<pde_state>& p_out)
+{
+	// loop through all solution states and convert to primatives
+	// size the arrays to match W_out
+	rho_out.resize(W_out.size());
+	u_out.resize(W_out.size());
+	E_out.resize(W_out.size());
+	p_out.resize(W_out.size());
+	for (size_t iState = 0; iState < W_out.size(); iState++) {
+		conv2Primatives(W_out[iState], rho_out[iState], u_out[iState], E_out[iState], p_out[iState]);
+	}
+}
+
 
 void EulerSol::operator()(const pde_state& x, pde_state& dxdt, const double t)
 {
