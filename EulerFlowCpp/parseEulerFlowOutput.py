@@ -18,18 +18,24 @@ for key, finname in solution['fields'].items():
     sol_data[key] = np.genfromtxt(finname, delimiter=',', missing_values='-nan(ind)', filling_values=np.NaN)
 
 #%% plotting
-id_max = sol_data['pressure(Pa)'].shape[0]
+id_max   = sol_data['pressure(Pa)'].shape[0]
 test_idx = np.arange(0, id_max, 20)
-fig, ax = plt.subplots(nrows=len(solution))
+rGrid__m = solution['grids']['grid(m)']
+times    = solution['grids']['times(s)']
+nPlots = len(sol_data)
+
+fig, ax = plt.subplots(nrows=nPlots)
 
 for i, (key, data) in enumerate(sol_data.items()):
     for idx in test_idx:
+        time__ms = times[idx] * 1000
         if 'pressure' in key or 'energy' in key:
-            ax[i].semilogy(solution['grids']['grid(m)'], data[idx], label=f"{idx}")
+            ax[i].semilogy(rGrid__m, data[idx], label=f"time={time__ms:.2f}ms")
         else:
-            ax[i].plot(solution['grids']['grid(m)'], data[idx], label=f"{idx}")
+            ax[i].plot(rGrid__m, data[idx], label=f"time={time__ms:.2f}ms")
     ax[i].set_ylabel(key)
     ax[i].grid(True)
 
-ax[2].set_xlabel("grid(m)")
+ax[nPlots-1].legend(fontsize=5)
+ax[nPlots-1].set_xlabel("grid(m)")
 # %%

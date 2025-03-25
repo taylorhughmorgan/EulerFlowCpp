@@ -6,13 +6,14 @@
         "Ambient Pressure(Pa)" : 101325,
         "Explosive Pressure(Pa)" : 4053000,
         "Explosive Radius(m)" : 3.0,
-        "Final Time(s)" : 0.004,
+        "Final Time(s)" : 0.01,
         "Ambient Density(kg/m^3)" : 1.225,
         "order" : 2,
         "gamma" : 1.4,
         "minNGridPts" : 500
     },
     "input_descriptions" : {
+        "Output File" : "file name for storing the outputs (JSON format)",
         "Length Scale(m)" : "Length for scaling the problem, typically >= 1.0",
         "Domain Size(m)" : "Size of the domain, or the maximum radius of interest",
         "Ambient Pressure(Pa)" : "ambient pressure in pascals",

@@ -28,28 +28,48 @@ void write_to_csv(const std::string& filename, const std::vector<std::vector<dou
 /**************** OBSERVER CLASS *************************************/
 struct push_back_state_and_time
 {
+	/* In order to observe the solution during the integration steps all you have to do is to provide 
+	a reasonable observer, which stores the intermediate steps in a container */
 	std::vector< pde_state >& m_states;
 	std::vector< double >& m_times;
+	size_t m_grid_size;
 
-	push_back_state_and_time(std::vector< pde_state >& states, std::vector< double >& times)
-		: m_states(states), m_times(times) {
+	void det_stop_state(const pde_state& x) {
+		// determine if a threshold has been reached and stop the integration
+		// check if rho, rho*U and rho*E are greater than the previous iteration. or if the end points contain NaNs
+		double rhoNew_end = x[m_grid_size - 1];
+		double rhoOld_end = m_states.back()[m_grid_size - 1];
+
+		if (rhoNew_end > rhoOld_end) {
+			throw std::runtime_error("rho(new) > rho(old) @ end of domain.");
+		}
+		else if (std::isnan(rhoNew_end)) {
+			throw std::runtime_error("NaN value identified at end of domain.");
+		}
+	}
+
+	push_back_state_and_time(std::vector< pde_state >& states, std::vector< double >& times, const size_t grid_size)
+		: m_states(states), m_times(times), m_grid_size(grid_size) {
 	}
 
 	void operator()(const pde_state& x, double t)
 	{
+		// append to tracked states
 		m_states.push_back(x);
 		m_times.push_back(t);
+		// check if needing to abort simulation
+		det_stop_state(x);
 	}
 };
 
 /*********************** SEDOV BLAST SOLUTION CLASS ***********************/
 SedovBlast::SedovBlast(
-	double m_ScaleLen__m,		// length scale
-	double m_DomainLen__m,		// size of the domain
-	double m_RExpl__m,			// radius of explosion
-	double m_PExpl__Pa,			// pressure of explosion
-	double m_tFinal__s,			// final simulation time
-	double m_rho0__kgpm3, // ambient air density, kg / m ^ 3
+	double m_ScaleLen__m,	// length scale
+	double m_DomainLen__m,	// size of the domain
+	double m_RExpl__m,		// radius of explosion
+	double m_PExpl__Pa,		// pressure of explosion
+	double m_tFinal__s,		// final simulation time
+	double m_rho0__kgpm3,	// ambient air density, kg / m ^ 3
 	double m_P0__Pa,		// ambient air pressure, Pa
 	size_t m_order,			// order of the equations, 0 = cartesian, 1 - cylindrical, 2 = spherical
 	double m_gamma,			// ratio of specific heats, N / A
@@ -73,8 +93,8 @@ SedovBlast::SedovBlast(
 	EExpl__J = pow(pi, double(n) / 2.0) * boost::math::tgamma(double(n) / 2.0 + 1.0) * pow(RExpl__m, n);
 
 	// dimensionless parameters: scale using rho0, P0, and diameter
-	double UScale = sqrt(P0__Pa / rho0__kgpm3);
-	double lenStar = DomainLen__m / ScaleLen__m;
+	UScale = sqrt(P0__Pa / rho0__kgpm3);
+	lenStar = DomainLen__m / ScaleLen__m;
 	double rExplStar = RExpl__m / ScaleLen__m;
 	double pExplStar = PExpl__Pa / P0__Pa;
 	double tFinStar = tFinal__s * UScale / ScaleLen__m;
@@ -108,7 +128,6 @@ SedovBlast::SedovBlast(
 	// time and grid in dimensional/metric scale
 	for (size_t i = 0; i < nGridPts; i++) {
 		rGrid__m.push_back(grid[i] * ScaleLen__m);
-		tGrid__s.push_back(times[i] * ScaleLen__m / UScale);
 	}
 }
 
@@ -136,7 +155,7 @@ void SedovBlast::solve()
 	// define observer
 	std::vector<pde_state> states_sol;
 	pde_state times_sol;
-	push_back_state_and_time observer(states_sol, times_sol);
+	push_back_state_and_time observer(states_sol, times_sol, ODEs->size);
 
 	// define numerical stepper
 	auto stepper = make_controlled(1e-6, 1e-6, runge_kutta_cash_karp54<pde_state>()); //runge_kutta_cash_karp54<pde_state>();
@@ -145,7 +164,12 @@ void SedovBlast::solve()
 	auto start = std::chrono::high_resolution_clock::now();
 
 	// run the integration
-	integrate_times(stepper, (*ODEs), W0Star, times.begin(), times.end(), dt, observer);
+	try {
+		integrate_times(stepper, (*ODEs), W0Star, times.begin(), times.end(), dt, observer);
+	}
+	catch (const std::runtime_error &e) {
+		std::cout << "Integration stopped prematurely at " << times_sol.back() << ". Reason: " << e.what() << std::endl;
+	}
 
 	// stop the timer
 	auto stop = std::chrono::high_resolution_clock::now();
@@ -164,18 +188,26 @@ void SedovBlast::solve()
 	E_sol.resize(EStar_sol.size()); 
 	u_sol.resize(uStar_sol.size());
 
+	// looping through each state
 	for (size_t iState = 0; iState < rhoStar_sol.size(); iState++)
 	{
 		rho_sol[iState].resize(rhoStar_sol[iState].size());
 		p_sol[iState].resize(pStar_sol[iState].size());
 		E_sol[iState].resize(EStar_sol[iState].size());
 		u_sol[iState].resize(uStar_sol[iState].size());
+
+		// converting each state value
 		for (size_t i = 0; i < rhoStar_sol[iState].size(); i++) {
 			rho_sol[iState][i] = rhoStar_sol[iState][i] * rho0__kgpm3;
 			u_sol[iState][i] = uStar_sol[iState][i] * sqrt(P0__Pa / rho0__kgpm3);
 			p_sol[iState][i] = pStar_sol[iState][i] * P0__Pa;
 			E_sol[iState][i] = p_sol[iState][i] / (rho_sol[iState][i] * (gamma - 1.0)) + 0.5 * pow(u_sol[iState][i], 2);
 		}
+	}
+
+	// creating the time grid
+	for (size_t i = 0; i < times_sol.size(); i++) {
+		tGrid__s.push_back(times_sol[i] * ScaleLen__m / UScale);
 	}
 	std::cout << "Converted from dimensionless to dimensional fields\n";
 }
