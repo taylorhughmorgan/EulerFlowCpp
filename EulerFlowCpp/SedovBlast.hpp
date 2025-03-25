@@ -12,6 +12,7 @@ private:
 	double UScale, lenStar;
 public:
 	double ScaleLen__m, DomainLen__m, RExpl__m, PExpl__Pa, tFinal__s, rho0__kgpm3, P0__Pa, gamma, EExpl__J;
+	bool observe_stop_criteria;
 	size_t order, minNGridPts, nGridPts;
 	pde_state grid, times, rGrid__m, tGrid__s;
 	pde_state rho0Star, p0Star, v0Star;
@@ -32,7 +33,8 @@ public:
 		double m_P0__Pa = 101325,		// ambient air pressure, Pa
 		size_t m_order = 0,				// order of the equations, 0 = cartesian, 1 - cylindrical, 2 = spherical
 		double m_gamma = 1.4,			// ratio of specific heats, N / A
-		size_t m_minNGridPts = 500		// minimum number of grid points
+		size_t m_minNGridPts = 500,		// minimum number of grid points
+		bool stop_criteria = true		// if criteria are met to stop the simulation, prematurely end the integration
 	);
 	// solve the system of equations over the time domain
 	void solve();

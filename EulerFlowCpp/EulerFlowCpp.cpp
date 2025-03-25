@@ -11,8 +11,9 @@ struct SedovParams {
     double tFin__s;         // final simulation time
     double rhoAmb__kgpm3;   // ambient air density
     size_t orders;          // order of solution
-    double gamma = 1.4;             // ratio of specific heats
-    size_t minNGridPts = 500;       // minimum grid resolution
+    double gamma;           // ratio of specific heats
+    size_t minNGridPts;     // minimum grid resolution
+    bool stopWhenEndReached; // observe stopping criteria (end integration prematurely if end is reached)
 };
 
 int main()
@@ -40,7 +41,8 @@ int main()
         input_deck["sedov"]["Ambient Density(kg/m^3)"],
         input_deck["sedov"]["order"],
         input_deck["sedov"]["gamma"],
-        input_deck["sedov"]["minNGridPts"]
+        input_deck["sedov"]["minNGridPts"],
+        input_deck["sedov"]["stop when end reached"]
     };
 
     SedovBlast Sedov(
@@ -53,8 +55,10 @@ int main()
         SP.PAmb__Pa,		// ambient air pressure, Pa
         SP.orders,			// order of the equations, 0 = cartesian, 1 - cylindrical, 2 = spherical
         SP.gamma,			// ratio of specific heats, N / A
-        SP.minNGridPts      // minimum number of grid points
+        SP.minNGridPts,     // minimum number of grid points
+        SP.stopWhenEndReached // stop integration when end of domain is reached
     );
+
     Sedov.solve(); // solve the system of equations and convert to SI units
     Sedov.save(input_deck["sedov"]["Output File"], input_deck);
     return 0;

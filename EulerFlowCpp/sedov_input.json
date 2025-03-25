@@ -10,7 +10,8 @@
         "Ambient Density(kg/m^3)" : 1.225,
         "order" : 2,
         "gamma" : 1.4,
-        "minNGridPts" : 500
+        "minNGridPts" : 500,
+        "stop when end reached" : true
     },
     "input_descriptions" : {
         "Output File" : "file name for storing the outputs (JSON format)",
@@ -23,6 +24,7 @@
         "Ambient Density(kg/m^3)" : "Ambient air density in kg/m^3",
         "order" : "order of the equations. 0=linear/cartesian, 1=cylindrical/polar, 2=spherical",
         "gamma" : "ratio of specific heats, dimensionless",
-        "minNGridPts" : "minimum number of grid points. If an explosion with a small radius and large domain is provided, the simulation will be larger than this."
+        "minNGridPts" : "minimum number of grid points. If an explosion with a small radius and large domain is provided, the simulation will be larger than this.",
+        "stop when end reached" : "stops the integration prior to reaching the final time if the wave has reached the end of the domain"
     }
 }

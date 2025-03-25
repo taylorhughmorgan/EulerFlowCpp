@@ -33,6 +33,7 @@ struct push_back_state_and_time
 	std::vector< pde_state >& m_states;
 	std::vector< double >& m_times;
 	size_t m_grid_size;
+	bool observe_stop_criteria;
 
 	void det_stop_state(const pde_state& x) {
 		// determine if a threshold has been reached and stop the integration
@@ -48,8 +49,8 @@ struct push_back_state_and_time
 		}
 	}
 
-	push_back_state_and_time(std::vector< pde_state >& states, std::vector< double >& times, const size_t grid_size)
-		: m_states(states), m_times(times), m_grid_size(grid_size) {
+	push_back_state_and_time(std::vector< pde_state >& states, std::vector< double >& times, const size_t grid_size, const bool stop_criteria)
+		: m_states(states), m_times(times), m_grid_size(grid_size), observe_stop_criteria(stop_criteria) {
 	}
 
 	void operator()(const pde_state& x, double t)
@@ -58,7 +59,7 @@ struct push_back_state_and_time
 		m_states.push_back(x);
 		m_times.push_back(t);
 		// check if needing to abort simulation
-		det_stop_state(x);
+		if (observe_stop_criteria) det_stop_state(x);
 	}
 };
 
@@ -73,7 +74,8 @@ SedovBlast::SedovBlast(
 	double m_P0__Pa,		// ambient air pressure, Pa
 	size_t m_order,			// order of the equations, 0 = cartesian, 1 - cylindrical, 2 = spherical
 	double m_gamma,			// ratio of specific heats, N / A
-	size_t m_minNGridPts	// minimum number of grid points
+	size_t m_minNGridPts,	// minimum number of grid points
+	bool stop_criteria		// if criteria are met to stop the simulation, prematurely end the integration
 )
 {
 	// Convert the parameters of the Sedov Blast to nondimensional form, for speed and numerical stability.
@@ -87,6 +89,7 @@ SedovBlast::SedovBlast(
 	this->order = m_order;
 	this->gamma = m_gamma;
 	this->minNGridPts = m_minNGridPts;
+	this->observe_stop_criteria = stop_criteria;
 
 	// Calculate the internal energy of the explosion
 	size_t n = order + 1;
@@ -155,7 +158,7 @@ void SedovBlast::solve()
 	// define observer
 	std::vector<pde_state> states_sol;
 	pde_state times_sol;
-	push_back_state_and_time observer(states_sol, times_sol, ODEs->size);
+	push_back_state_and_time observer(states_sol, times_sol, ODEs->size, observe_stop_criteria);
 
 	// define numerical stepper
 	auto stepper = make_controlled(1e-6, 1e-6, runge_kutta_cash_karp54<pde_state>()); //runge_kutta_cash_karp54<pde_state>();
