@@ -17,7 +17,8 @@ private:
 	BCFunction rhoUpperBC, rhoLowerBC, uUpperBC, uLowerBC, EUpperBC, ELowerBC;
 	// paramters on the ghost grid
 	pde_state ghost_grid, ghost_rho, ghost_U, ghost_E, ghost_p, ghost_H, ghost_cs;
-	flux_state W, F, S, Qj, dissipation, residual;
+	flux_state W, F, S, Qj, Dj, residual;
+	JST_DissipFlux DissipFlux;
 public:
 	pde_state grid, grid_to_order;
 	double gamma;

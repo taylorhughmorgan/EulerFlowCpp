@@ -158,6 +158,8 @@ void SedovBlast::solve()
 	// define observer
 	std::vector<pde_state> states_sol;
 	pde_state times_sol;
+	states_sol.reserve(times.size());
+	times_sol.reserve(times.size());
 	push_back_state_and_time observer(states_sol, times_sol, ODEs->size, observe_stop_criteria);
 
 	// define numerical stepper
@@ -171,7 +173,8 @@ void SedovBlast::solve()
 		integrate_times(stepper, (*ODEs), W0Star, times.begin(), times.end(), dt, observer);
 	}
 	catch (const std::runtime_error &e) {
-		std::cout << "Integration stopped prematurely at " << times_sol.back() << ". Reason: " << e.what() << std::endl;
+		double finalTime__ms = 1000.0 * times_sol.back() * ScaleLen__m / UScale;
+		std::cout << "Integration stopped prematurely at " << finalTime__ms << "ms. Reason: " << e.what() << std::endl;
 	}
 
 	// stop the timer

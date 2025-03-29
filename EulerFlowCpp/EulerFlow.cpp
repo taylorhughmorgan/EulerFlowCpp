@@ -47,14 +47,15 @@ EulerSol::EulerSol(
 	u.resize(size);
 	E.resize(size);
 
-	for (size_t iW = 0; iW < W.size(); iW++) {
+	for (size_t iW = 0; iW < W.size(); ++iW) {
 		W[iW] = pde_state(ghost_size, 0.0);
 		F[iW] = pde_state(ghost_size, 0.0);
 		S[iW] = pde_state(ghost_size, 0.0);
 		Qj[iW] = pde_state(size, 0.0);
-		dissipation[iW] = pde_state(size, 0.0);
+		Dj[iW] = pde_state(size, 0.0);
 		residual[iW] = pde_state(size, 0.0);
 	}
+	DissipFlux.init(ghost_size);
 
 	// array of grid ^ order
 	grid_to_order.resize(size);
@@ -80,7 +81,7 @@ void EulerSol::createICs(const pde_state& rho0, const pde_state& v0, const pde_s
 	// using equations of state, calculate internal energy
 	pde_state E0(rho0.size());
 
-	for (size_t i = 0; i < rho0.size(); i++) {
+	for (size_t i = 0; i < rho0.size(); ++i) {
 		E0[i] = p0[i] / (rho0[i] * (gamma - 1.0)) + 0.5 * pow(v0[i], 2);
 		W0[i] = rho0[i] * grid_to_order[i];
 		W0[i + size] = rho0[i] * v0[i] * grid_to_order[i];
@@ -97,7 +98,7 @@ void EulerSol::conv2Primatives(const pde_state& W_out, pde_state& rho_out, pde_s
 	u_out.resize(this->size);
 	E_out.resize(this->size);
 	p_out.resize(this->size);
-	for (size_t i = 0; i < this->size; i++) {
+	for (size_t i = 0; i < this->size; ++i) {
 		rho_out[i] = W_out[i] / grid_to_order[i];
 		double rho_U = W_out[i + size] / grid_to_order[i];
 		double rho_E = W_out[i + 2 * size] / grid_to_order[i];
@@ -125,7 +126,7 @@ void EulerSol::convAllPrimatives(const std::vector<pde_state>& W_out, std::vecto
 void EulerSol::operator()(const pde_state& x, pde_state& dxdt, const double t)
 {
 	// Defining the system of equations
-	for (size_t i = 0; i < size; i++) {
+	for (size_t i = 0; i < size; ++i) {
 		rho[i] = x[i] / grid_to_order[i];
 		rho_U[i] = x[i + size] / grid_to_order[i];
 		rho_E[i] = x[i + 2 * size] / grid_to_order[i];
@@ -149,7 +150,7 @@ void EulerSol::operator()(const pde_state& x, pde_state& dxdt, const double t)
 	EUpperBC(ghost_E, ghost_grid);
 
 	// Apply Equations of State on Ghost Grid
-	for (size_t iG = 0; iG < ghost_size; iG++)
+	for (size_t iG = 0; iG < ghost_size; ++iG)
 	{
 		ghost_p[iG] = ghost_rho[iG] * (gamma - 1.0) * (ghost_E[iG] - 0.5 * pow(ghost_U[iG], 2));
 		ghost_H[iG] = ghost_E[iG] + ghost_p[iG] / ghost_rho[iG];
@@ -171,17 +172,17 @@ void EulerSol::operator()(const pde_state& x, pde_state& dxdt, const double t)
 
 	// calculate second-order Euler flux and dissipation flux
 	JST_2ndOrderEulerFlux(F, Qj);
-	JST_DissipationFlux(dissipation, this->W, ghost_p, ghost_U, ghost_cs, alpha, beta);
+	DissipFlux(Dj, this->W, ghost_p, ghost_U, ghost_cs, alpha, beta);
 
 	// calculating residuals
-	for (size_t iflux = 0; iflux < residual.size(); iflux++) {
-		for (size_t i = 0; i < residual[iflux].size(); i++) {
-			residual[iflux][i] = S[iflux][i] - 1.0 / dr * (Qj[iflux][i] - dissipation[iflux][i]);
+	for (size_t iflux = 0; iflux < residual.size(); ++iflux) {
+		for (size_t i = 0; i < residual[iflux].size(); ++i) {
+			residual[iflux][i] = S[iflux][i] - 1.0 / dr * (Qj[iflux][i] - Dj[iflux][i]);
 		}
 	}
 
 	// loading residual into dWdt
-	for (size_t i = 0; i < size; i++) {
+	for (size_t i = 0; i < size; ++i) {
 		dxdt[i] = residual[0][i];
 		dxdt[i + size] = residual[1][i];
 		dxdt[i + 2 * size] = residual[2][i];
