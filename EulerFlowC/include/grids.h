@@ -1,6 +1,9 @@
 /*
 Define 1D grids
 */
+#ifndef GRIDS_H
+#define GRIDS_H
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -42,3 +45,4 @@ void Grid1D_free(Grid1D * grid) {
         free(grid);
     }
 }
+#endif
