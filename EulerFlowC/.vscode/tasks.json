@@ -5,9 +5,13 @@
             "label": "C/C++: cl.exe build active file",
             "command": "cl.exe",
             "args": [
+                "/I", "${workspaceFolder}\\include", // 👈 Include path for headers
+                "/I", "${workspaceFolder}\\lib",     // 👈 Include path for libs
                 "/Zi",
                 "/EHsc",
                 "/nologo",
+                "${workspaceFolder}\\main.c",     // Main source file
+                "${workspaceFolder}\\lib\\rkf45.c",   // Additional C file to compile/link
                 "/Fe${fileDirname}\\${fileBasenameNoExtension}.exe",
                 "${file}"
             ],

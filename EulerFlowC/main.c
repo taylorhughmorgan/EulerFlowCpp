@@ -4,8 +4,7 @@ Description: solve the Euler Equations in C.
 Date: 2025-06-17
 */
 #include <math.h>
-#include "include/fluxes.h"
-
+#include "fluxes.h"
 
 int main() {
     printf("Hello World!\n");
@@ -17,6 +16,10 @@ int main() {
     Grid1D * grid = Grid1D_alloc(n_cells);
     State * cells = State_alloc(n_cells);
     State * fluxes = State_alloc(n_cells - 1);
+
+    if (grid == NULL || cells == NULL || fluxes == NULL) {
+        return 1;
+    }
 
     // set up the grid and cell values
     double x_max = 2 * M_PI;
