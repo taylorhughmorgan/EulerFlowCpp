@@ -12,3 +12,6 @@ set(SOURCES
 )
 
 add_executable(main ${SOURCES})
+
+# Link the math library
+target_link_libraries(main m)
