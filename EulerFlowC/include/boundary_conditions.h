@@ -9,15 +9,15 @@ typedef enum {LEFT, RIGHT} SIDE;
 typedef void (*BoundaryCondition)(double*, const double, const double, const size_t);
 
 typedef struct {
-    BoundaryCondition left_bc;
-    BoundaryCondition right_bc;
-    double left_bc_val;
-    double right_bc_val;
+    BoundaryCondition left_bc;  // left boundary condition
+    BoundaryCondition right_bc; // right boundary condition
+    double left_bc_val;         // value for left boundary condition
+    double right_bc_val;        // value for right boundary condition
 } BC1D;
 
 // define fixed value or Dirclet boundary condition
 void fixed_value_bc(double* arr, const double val, const double dx, const size_t idx) {
-    (void)dx;
+    (void)dx; // avoid unused parameter warning
     arr[idx] = val;
 }
 
