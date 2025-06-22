@@ -1,14 +1,15 @@
 #include <stdio.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_odeiv2.h>
+#include "boundary_conditions.h"
 
-// structure containing thermodynamic parameters
+// structure containing simulation parameters
 typedef struct {
     size_t size;        // size of the problem
     double alpha;       // diffusion coefficient
     double dx;          // grid size
     double gamma;       // ratio of specific heats
-} Thermo;
+} PARAMS;
 
 
 int func(double t, const double y[], double dydt[], void *params)
@@ -16,30 +17,39 @@ int func(double t, const double y[], double dydt[], void *params)
     /* RHS of the heat equation:
         \partial U / \partial t =  */
     (void)(t); /* avoid unused parameter warning */
-    Thermo thermo = *(Thermo *)params;
+    PARAMS sim_params = *(PARAMS *)params;
 
-    for (size_t i = 0; i < thermo.size - 1; ++i) {
-        dydt[i] = thermo.alpha * (y[i - 1] - y[i] + y[i + 1]) / thermo.dx;
+    for (size_t i = 0; i < sim_params.size - 1; ++i) {
+        dydt[i] = sim_params.alpha * (y[i - 1] - y[i] + y[i + 1]) / sim_params.dx;
     }
     return GSL_SUCCESS;
 }
 
 int main () 
 {
-    Thermo thermo;
-    thermo.gamma = 1.4;
-    thermo.alpha = 1.0;
-    thermo.size = 20;
+    // intializing the thermodynamic parameters and grid size
+    PARAMS sim_params;
+    sim_params.gamma = 1.4;
+    sim_params.alpha = 1.0;
+    sim_params.size = 20;
+
     // setting up the grid
     double xmin = 0.0, xmax = 1.0;
     double t = 0.0, tfinal = 0.1;
-    thermo.dx = (xmax - xmin) / (double)thermo.size;
+    sim_params.dx = (xmax - xmin) / (double)sim_params.size;
     double courant = 0.25;
-    double dtmax = courant * thermo.dx * thermo.dx / thermo.alpha;
+    double dtmax = courant * sim_params.dx * sim_params.dx / sim_params.alpha;
+
+    // defining boundary conditions
+    BC1D bc;
+    bc.left_bc  = &fixed_gradient_bc;
+    bc.right_bc = &fixed_value_bc;
+    bc.left_bc_val  = 0.0;
+    bc.right_bc_val = 0.0;
 
     // define initial conditions
-    double y[thermo.size];
-    for (size_t i = 0; i < thermo.size; ++i) {
+    double y[sim_params.size];
+    for (size_t i = 0; i < sim_params.size; ++i) {
         if (i > 7 && i < 13) {
             y[i] = 1;
         }
@@ -48,7 +58,7 @@ int main ()
 
     // define the ODE solver
     printf("Setting up the system of equations\n");
-    gsl_odeiv2_system sys = {func, NULL, thermo.size, &thermo};
+    gsl_odeiv2_system sys = {func, NULL, sim_params.size, &sim_params};
 
     gsl_odeiv2_driver * d = gsl_odeiv2_driver_alloc_y_new(&sys, gsl_odeiv2_step_rk8pd, 1e-6, 1e-6, 0.0);
 
@@ -61,9 +71,9 @@ int main ()
     }
     else {
         printf("Setting up the output file\n");
-        fprintf(fptr, "# Solution to the heat equation for alpha=%f on grid xmin=%f, xmax=%f\n", thermo.alpha, xmin, xmax);
+        fprintf(fptr, "# Solution to the heat equation for alpha=%f on grid xmin=%f, xmax=%f\n", sim_params.alpha, xmin, xmax);
         fprintf(fptr, "time, ");
-        for (size_t i = 0; i < thermo.size; ++i) {
+        for (size_t i = 0; i < sim_params.size; ++i) {
             fprintf(fptr, "y[%zu], ", i);
         }
         fprintf(fptr, "\n");
@@ -79,9 +89,13 @@ int main ()
             printf("error, return value=%d\n", status);
             break;
         }
+        // applt boundary conditions
+        bc.left_bc(y, 0.0, sim_params.dx, 0);
+        bc.right_bc(y, 0.0, sim_params.dx, sim_params.size - 1);
+        
         // saving the result
         fprintf(fptr, "%.5e, ", t);
-        for (size_t i = 0; i < thermo.size; ++i) {
+        for (size_t i = 0; i < sim_params.size; ++i) {
             fprintf(fptr, "%.5e, ", y[i]);
         }
         fprintf(fptr, "\n");
