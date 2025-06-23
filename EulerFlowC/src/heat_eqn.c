@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_odeiv2.h>
-#include "boundary_conditions.h"
+#include "pdes.h"
 
 // structure containing simulation parameters
 typedef struct {
@@ -41,36 +41,27 @@ void save_result(FILE * fptr, const double t, const double* y_sol, size_t size) 
     fprintf(fptr, "\n");
 }
 
-int main() 
+int heat_eqn(size_t n_grid_pts, // number of grid pts 
+    double alpha,               // heat diffusivity
+    double grid_size,           // grid size
+    double tfinal,              // final time
+    double out_every,           // save time 
+    BC1D* bc,                   // boundary conditions
+    double* y                   // initial condition
+)
 {
     // intializing the thermodynamic parameters and grid size
     PARAMS sim_params;
-    sim_params.alpha = 1.0;
-    sim_params.size = 20;
+    sim_params.alpha = alpha;
+    sim_params.size = n_grid_pts;
 
     // setting up the grid
-    double xmin = 0.0, xmax = 1.0;
-    double t = 0.0, tfinal = 0.3, out_every = 0.01;
+    double xmin = 0.0, xmax = grid_size;
+    double t = 0.0;
     sim_params.dx = (xmax - xmin) / (double)sim_params.size;
     double courant = 0.5;
     double dtmax = courant * sim_params.dx * sim_params.dx / sim_params.alpha;
     sim_params.dt = dtmax;
-
-    // defining boundary conditions
-    BC1D bc;
-    bc.left_bc  = &fixed_gradient_bc;
-    bc.right_bc = &fixed_gradient_bc;
-    bc.left_bc_val  = 0.0;
-    bc.right_bc_val = 0.0;
-
-    // define initial conditions
-    double y[sim_params.size];
-    for (size_t i = 0; i < sim_params.size; ++i) {
-        if (i > 7 && i < 13) {
-            y[i] = 1;
-        }
-        else y[i] = 0;
-    }
 
     // define the ODE solver
     printf("Setting up the system of equations\n");
@@ -110,7 +101,7 @@ int main()
             break;
         }
         // apply boundary conditions
-        apply_BC(&bc, y, &sim_params);
+        apply_BC(bc, y, &sim_params);
         
         // saving the result
         if (output_tracker >= out_every) {
@@ -120,8 +111,8 @@ int main()
         }
     }
 
-    printf("Solution reached!\n");
+    printf("Solution reached!\nSolution saved to %s", filename);
     fclose(fptr); // close the file output
     gsl_odeiv2_driver_free (d); // free the memory
-    return 0;
+    return GSL_SUCCESS;
 }

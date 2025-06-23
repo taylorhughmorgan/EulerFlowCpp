@@ -1,17 +1,23 @@
 cmake_minimum_required(VERSION 3.10)
 project(MyCProject C)
 find_package(GSL REQUIRED)
+
+# set release flags
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 # Add include directories
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/lib)
 
 # Add executable and source files
 set(SOURCES
-    heat_eqn.c
+    src/heat_eqn.c
+    src/boundary_conditions.c
+    main.c
 )
 
-add_executable(heat_eqn ${SOURCES})
+add_executable(main ${SOURCES})
 
 # Link the math library
-target_link_libraries(heat_eqn m)
-target_link_libraries(heat_eqn GSL::gsl GSL::gslcblas)
+target_link_libraries(main m)
+target_link_libraries(main GSL::gsl GSL::gslcblas)
