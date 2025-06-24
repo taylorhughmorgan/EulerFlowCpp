@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <gsl/gsl_errno.h>
-#include <gsl/gsl_odeiv2.h>
 #include "pdes.h"
 
 // structure containing simulation parameters
@@ -46,8 +45,9 @@ int heat_eqn(size_t n_grid_pts, // number of grid pts
     double grid_size,           // grid size
     double tfinal,              // final time
     double out_every,           // save time 
-    BC1D* bc,                   // boundary conditions
-    double* y                   // initial condition
+    BC1D * bc,                  // boundary conditions
+    gsl_odeiv2_step_type stepper, // time step integrator
+    double * y                  // initial condition
 )
 {
     // intializing the thermodynamic parameters and grid size
@@ -64,10 +64,10 @@ int heat_eqn(size_t n_grid_pts, // number of grid pts
     sim_params.dt = dtmax;
 
     // define the ODE solver
-    printf("Setting up the system of equations\n");
+    printf("Setting up the system of equations. Solve using %s time stepper.\n", stepper.name);
     gsl_odeiv2_system sys = {func, NULL, sim_params.size, &sim_params};
 
-    gsl_odeiv2_driver * d = gsl_odeiv2_driver_alloc_y_new(&sys, gsl_odeiv2_step_rk8pd, 1e-6, 1e-6, 0.0);
+    gsl_odeiv2_driver * d = gsl_odeiv2_driver_alloc_y_new(&sys, &stepper, 1e-6, 1e-6, 0.0);
 
     // define file output
     char filename[] = "heat_eqn_sol.csv";

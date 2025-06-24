@@ -36,7 +36,10 @@ int main() {
     bc.right_bc = &fixed_gradient_bc;
     bc.left_bc_val  = 0.0;
     bc.right_bc_val = 0.0;
+    // define time stepper
+    //const gsl_odeiv2_step_type * stepper = gsl_odeiv2_step_rk8pd;
+    const gsl_odeiv2_step_type * stepper = gsl_odeiv2_step_rkf45;
 
-    int res = heat_eqn(n_grid_pts, alpha, grid_size, t_final, out_every, &bc, y0);
+    int res = heat_eqn(n_grid_pts, alpha, grid_size, t_final, out_every, &bc, *stepper, y0);
     return 0;
 }

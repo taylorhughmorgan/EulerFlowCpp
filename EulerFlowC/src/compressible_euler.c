@@ -2,7 +2,6 @@
 #include <math.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_block.h>
-#include <gsl/gsl_odeiv2.h>
 #include <gsl/gsl_statistics.h>
 #include "pdes.h"
 #include "grids.h"
@@ -66,6 +65,9 @@ typedef struct {
     gsl_block * ghost_grid;
     gsl_block * grid_to_order;
     Fields * fields;
+    BC1D * rho_bc;
+    BC1D * vel_bc;
+    BC1D * energy_bc;
 } Params;
 
 void alloc_params(Params * params, size_t size) {
@@ -105,8 +107,11 @@ int func(double t, const double y[], double dydt[], void *params)
     double * rho_E = &(self.fields->rho_E->data);
     double * U     = &(self.fields->u->data);
     double * E     = &(self.fields->E->data);
-    // defining ghost grid:
-    double ghost_rho[self.size + 2], ghost_U[self.size + 2], ghost_E[self.size + 2]; // density, velocity, internal energy
+    // defining ghost grid: density, velocity, internal energy
+    double * ghost_rho = &(self.fields->ghost_rho->data);
+    double * ghost_U   = &(self.fields->ghost_u->data);
+    double * ghost_E   = &(self.fields->ghost_E->data);
+
     double ghost_p[self.size + 2], ghost_H[self.size + 2], ghost_cs[self.size + 2];  // pressure, enthalpy, sound speed
     // defining state and flux vectors
     double W1[self.size + 2], W2[self.size + 2], W3[self.size + 2];
@@ -114,7 +119,7 @@ int func(double t, const double y[], double dydt[], void *params)
 
     // unraveling rho, rho*U, and rho*E
     for (size_t i = 0; i < self.size; ++i) {
-        rho[i] = y[i] / self.grid_to_order->data[i];
+        rho[i]   = y[i] / self.grid_to_order->data[i];
         rho_U[i] = y[i + self.size] / self.grid_to_order->data[i];
         rho_E[i] = y[i + 2 * self.size] / self.grid_to_order->data[i];
 
@@ -129,11 +134,14 @@ int func(double t, const double y[], double dydt[], void *params)
     }
 
     // apply boundary conditions
+    apply_BC(self.rho_bc, ghost_rho, &self);
+    apply_BC(self.vel_bc, ghost_U, &self);
+    apply_BC(self.energy_bc, ghost_E, &self);
 
     // apply equations of state on ghost-grid
     for (size_t iG = 0; iG < self.ghost_size; ++iG) {
-        ghost_p[iG] = ghost_rho[iG] * (self.gamma - 1.0) * (ghost_E[iG] - 0.5 * pow(ghost_U[iG], 2));
-        ghost_H[iG] = ghost_E[iG] + ghost_p[iG] / ghost_rho[iG];
+        ghost_p[iG]  = ghost_rho[iG] * (self.gamma - 1.0) * (ghost_E[iG] - 0.5 * pow(ghost_U[iG], 2));
+        ghost_H[iG]  = ghost_E[iG] + ghost_p[iG] / ghost_rho[iG];
         ghost_cs[iG] = sqrt(self.gamma * ghost_p[iG] / ghost_rho[iG]);
 
         // develop W: state vector variable
@@ -155,11 +163,17 @@ int func(double t, const double y[], double dydt[], void *params)
     return GSL_SUCCESS;
 }
 
-gsl_block * create_ICs(double * rho0, double * press0, double * vel0, size_t size) {
+gsl_block * create_ICs(double * rho0, double * press0, double * vel0, size_t size, Params * sim) {
     // create initial conditions for flux-vector state
-    gsl_block * y;
-    y = gsl_block_alloc(3 * size);
-    return y;
+    gsl_block * y0;
+    y0 = gsl_block_alloc(3 * size);
+    for (size_t i = 0; i < size; ++i) {
+		double E0 = press0[i] / (rho0[i] * (sim->gamma - 1.0)) + 0.5 * pow(vel0[i], 2);
+		y0->data[i] = rho0[i] * sim->grid_to_order->data[i];
+		y0->data[i + size] = rho0[i] * vel0[i] * sim->grid_to_order->data[i];
+		y0->data[i + 2 * size] = rho0[i] * E0 * sim->grid_to_order->data[i];
+    }
+    return y0;
 }
 
 void calc_dt(Params * sim) {
@@ -201,7 +215,7 @@ int euler_eqns(CoordSys coord,  // coordinate system
     calc_dt(&sim);
 
     // creating initial conditions
-    gsl_block * y = create_ICs(rho0, press0, vel0, sim.size);
+    gsl_block * y = create_ICs(rho0, press0, vel0, sim.size, &sim);
 
     // define the ODE solver
     printf("Setting up the system of equations\n");
