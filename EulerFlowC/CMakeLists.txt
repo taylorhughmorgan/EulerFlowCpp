@@ -13,6 +13,7 @@ include_directories(${PROJECT_SOURCE_DIR}/lib)
 set(SOURCES
     src/heat_eqn.c
     src/boundary_conditions.c
+    src/grids.c
     main.c
 )
 

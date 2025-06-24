@@ -6,9 +6,16 @@ Date: 2025-06-17
 #include <stdio.h>
 #include <math.h>
 #include "pdes.h"
+#include "grids.h"
 
 int main() {
-    printf("Hello World!\n");
+    printf("Testing grids.h!\n");
+    // allocating then freeing test_grid
+    Grid1D * test_grid = Grid1D_alloc(100);
+    Grid1D_free(test_grid);
+
+    // testing the heat equation
+    printf("Testing Heat Equation in 1D!\n");
     size_t n_grid_pts = 40;
     double alpha = 1.0;
     double grid_size = 1.0;
